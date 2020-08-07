@@ -6,7 +6,7 @@ import           App
 
 main :: IO ()
 main = do
-  let port     = 3000
+  let port     = 3002
       settings = setPort port $ setBeforeMainLoop
         (hPutStrLn stderr ("listening on port " ++ show port ++ "..."))
         defaultSettings

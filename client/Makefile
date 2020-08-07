@@ -1,4 +1,4 @@
-../assets/index.html: src/Api.elm src/Main.elm
+../assets/index.html: src/Api.elm src/Main.elm src/CustomApi.elm
 	elm make src/Main.elm
 	mv index.html ../assets/
 

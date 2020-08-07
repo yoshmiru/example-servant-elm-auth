@@ -1,17 +1,20 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds, OverloadedStrings, TypeOperators, FlexibleInstances  #-}
 
 module App where
 
-import           Control.Concurrent
-import           Control.Monad.IO.Class
-import           Data.Map
-import           Network.Wai
-import           Network.Wai.MakeAssets
-import           Servant
+import Control.Concurrent
+import Control.Monad.IO.Class
+import Data.ByteString.Char8 (unpack)
+import Data.Map
+import Network.Wai
+import Network.Wai.MakeAssets
+import Servant
+import Servant.Auth.Server as SAS
 
-import           Api
+import Api
 
-type WithAssets = Api :<|> Raw
+type PublicWithAssets = PublicApi :<|> Raw
+type WithAssets = PrivateApi :<|> PublicWithAssets
 
 withAssets :: Proxy WithAssets
 withAssets = Proxy
@@ -20,16 +23,40 @@ options :: Options
 options = Options "client"
 
 app :: IO Application
-app = serve withAssets <$> server
-
-server :: IO (Server WithAssets)
-server = do
-  assets <- serveAssets options
+app = do
   db     <- mkDB
-  return (apiServer db :<|> Tagged assets)
+  assets <- serveAssets options
+  myKey <- SAS.generateKey
+  let jwtCfg = defaultJWTSettings myKey
+      cookieCfg = defaultCookieSettings
+      cfg = jwtCfg :. cookieCfg :. EmptyContext
+      server = privateServer db :<|> publicServer cookieCfg jwtCfg db assets
+  pure  $ serveWithContext withAssets cfg server
 
-apiServer :: DB -> Server Api
-apiServer db = listItems db :<|> getItem db :<|> postItem db :<|> deleteItem db
+publicServer :: CookieSettings -> JWTSettings -> DB -> Application -> Server PublicWithAssets
+publicServer cs jwts db assets = (publicApiServer cs jwts db :<|> Tagged assets)
+
+privateServer :: DB -> Server PrivateApi
+privateServer db (Authenticated user) = privateApiServer db user
+privateServer db _ = throwAll err401
+
+publicApiServer :: CookieSettings -> JWTSettings -> DB -> Server PublicApi
+publicApiServer cs jwts db = login cs jwts db
+
+privateApiServer :: DB -> User -> Server Api
+privateApiServer db _ = listItems db :<|> getItem db :<|> postItem db :<|> deleteItem db
+
+login :: CookieSettings -> JWTSettings -> DB -> LoginForm
+                        -> Handler String
+login cs jwts db (LoginForm userName password) = do
+  let toUser userId = User userId userName password
+      user = case (userName , password) of
+        ("user1", "password") -> toUser 1
+        ("user2", "password") -> toUser 2
+  mCookie <- liftIO $ makeSessionCookieBS cs jwts user
+  case mCookie of
+    Just cookie -> return $ unpack cookie
+    _ -> throwAll err401
 
 listItems :: DB -> Handler [ItemId]
 listItems db = liftIO $ allItemIds db

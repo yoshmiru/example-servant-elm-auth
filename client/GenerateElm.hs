@@ -22,5 +22,8 @@ main = generateElmModuleWith
   ["Api"]
   defElmImports
   "client/src"
-  [DefineElm (Proxy :: Proxy Item), DefineElm (Proxy :: Proxy ItemId)]
-  (Proxy :: Proxy Api)
+  [ DefineElm (Proxy :: Proxy Item)
+  , DefineElm (Proxy :: Proxy ItemId)
+  , DefineElm (Proxy :: Proxy LoginForm)
+  ]
+  (Proxy :: Proxy ClientApi)

@@ -1,4 +1,4 @@
-name: example-servant-elm
+name: example-servant-elm-auth
 
 dependencies:
   - base
@@ -6,6 +6,7 @@ dependencies:
   - aeson
   - wai-make-assets
   - servant
+  - servant-auth-server
   - servant-elm
   - elm-bridge
   - wai
@@ -13,6 +14,7 @@ dependencies:
   - text
   - transformers
   - containers
+  - bytestring
 
 executables:
   server:
