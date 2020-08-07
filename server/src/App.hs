@@ -49,13 +49,17 @@ privateApiServer db _ = listItems db :<|> getItem db :<|> postItem db :<|> delet
 login :: CookieSettings -> JWTSettings -> DB -> LoginForm
                         -> Handler String
 login cs jwts db (LoginForm userName password) = do
-  let toUser userId = User userId userName password
-      user = case (userName , password) of
+  let toUser userId = Just $ User userId userName password
+      mUser = case (userName , password) of
         ("user1", "password") -> toUser 1
         ("user2", "password") -> toUser 2
-  mCookie <- liftIO $ makeSessionCookieBS cs jwts user
-  case mCookie of
-    Just cookie -> return $ unpack cookie
+        _                     -> Nothing
+  case mUser of
+    Just user -> do
+      mCookie <- liftIO $ makeSessionCookieBS cs jwts user
+      case mCookie of
+        Just cookie -> return $ unpack cookie
+        _ -> throwAll err401
     _ -> throwAll err401
 
 listItems :: DB -> Handler [ItemId]
