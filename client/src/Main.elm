@@ -130,7 +130,7 @@ update msg model =
 
                 Done id ->
                     ( model
-                    , deleteApiItemByItemId id (fromServer (\() -> Delete id))
+                    , CApi.deleteApiItemByItemId model.token id (fromServer (\() -> Delete id))
                     )
                 Login ->
                     let name = model.userIdInput

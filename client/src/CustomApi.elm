@@ -98,3 +98,34 @@ getApiItemByItemId token capture_itemId toMsg =
                 Nothing
             }
 
+deleteApiItemByItemId : String -> ItemId -> (Result Http.Error  (())  -> msg) -> Cmd msg
+deleteApiItemByItemId token capture_itemId toMsg =
+    let
+        params =
+            List.filterMap identity
+            (List.concat
+                [])
+    in
+        Http.request
+            { method =
+                "DELETE"
+            , headers = headers token
+            , url =
+                Url.Builder.crossOrigin ""
+                    [ "api"
+                    , "item"
+                    , (capture_itemId |> String.fromInt)
+                    ]
+                    params
+            , body =
+                Http.emptyBody
+            , expect =
+                Http.expectString
+                     (\x -> case x of
+                     Err e -> toMsg (Err e)
+                     Ok _ -> toMsg (Ok ()))
+            , timeout =
+                Nothing
+            , tracker =
+                Nothing
+            }
